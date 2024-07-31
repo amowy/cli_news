@@ -5,6 +5,8 @@ use serde_json;
 use termimad::MadSkin;
 use ureq;
 use url::Url;
+#[cfg(feature = "async")]
+use reqwest::Method;
 
 const BASE_URL: &str = "https://newsapi.org/v2";
 
@@ -20,6 +22,9 @@ pub enum NewsApiError{
     UrlParsingFailed(#[from] url::ParseError),
     #[error("Request failed {0}")]
     BadRequest(&'static str),
+    #[cfg(feature = "async")]
+    #[error("Url Parsing Failed")]
+    AsyncRequestFailed(#[from] reqwest::Error)
 }
 
 #[derive(Deserialize, Debug)]
@@ -135,6 +140,25 @@ impl NewsApi {
         let req = ureq::get(&url).set("Authorization", &self.api_key);
         let response: NewsApiResponse = req.call()?.into_json()?;
         
+        match response.status.as_str() {
+            "ok" => return Ok(response),
+            _ => return Err(map_response_error(response.code))
+        }
+    }
+
+    #[cfg(feature = "async")]
+    pub async fn fetch_async(&self) ->  Result<NewsApiResponse, NewsApiError> {
+        let url = self.prepare_url()?;
+        let client = reqwest::Client::new();
+
+        let request = client
+        .request(Method::Get, url)
+        .header("Authorization", &self.api_key)
+        .build()
+        .map_err(|e| NewsApiError::AsyncRequestFailed(e))?;
+
+        let response: NewsApiResponse = client.execute(request).await?.json().await.map_err(|e| NewsApiError::AsyncRequestFailed(e))?;
+    
         match response.status.as_str() {
             "ok" => return Ok(response),
             _ => return Err(map_response_error(response.code))
