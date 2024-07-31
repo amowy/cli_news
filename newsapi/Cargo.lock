@@ -309,6 +309,7 @@ dependencies = [
  "termimad",
  "thiserror",
  "ureq",
+ "url",
 ]
 
 [[package]]

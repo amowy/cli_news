@@ -324,6 +324,7 @@ dependencies = [
  "termimad",
  "thiserror",
  "ureq",
+ "url",
 ]
 
 [[package]]
@@ -680,6 +681,8 @@ dependencies = [
  "once_cell",
  "rustls",
  "rustls-pki-types",
+ "serde",
+ "serde_json",
  "url",
  "webpki-roots",
 ]
